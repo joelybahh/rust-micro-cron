@@ -1,0 +1,39 @@
+[package]
+name = "personal-cron"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# CRON parsing and scheduling
+cron = "0.12.0"
+chrono = { version = "0.4.31", features = ["serde"] }
+tokio = { version = "1.35.1", features = ["full"] }
+
+# HTTP requests
+reqwest = { version = "0.11.23", features = ["json"] }
+
+# Configuration and job files
+serde = { version = "1.0.193", features = ["derive"] }
+serde_json = "1.0.108"
+toml = "0.8.8"
+
+# Logging
+log = "0.4.20"
+env_logger = "0.10.1"
+
+# CLI interface
+clap = { version = "4.4.11", features = ["derive"] }
+
+# Error handling
+thiserror = "1.0.51"
+anyhow = "1.0.77"
+
+# Terminal UI for monitoring
+tui = "0.19.0"
+crossterm = "0.27.0"
+
+# File watching for auto-reload of job configs
+notify = "6.1.1"
+
+# Glob pattern matching
+glob = "0.3.1"

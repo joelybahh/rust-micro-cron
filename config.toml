@@ -1,0 +1,6 @@
+jobs_directory = "cron_jobs"
+logs_directory = "logs"
+check_interval_ms = 1000
+log_level = "info"
+monitor_enabled = true
+monitor_update_interval_ms = 1000
