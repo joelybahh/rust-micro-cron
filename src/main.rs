@@ -3,6 +3,7 @@ mod job;
 mod logger;
 mod monitor;
 mod scheduler;
+mod time;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};

@@ -5,8 +5,9 @@ edition = "2021"
 
 [dependencies]
 # CRON parsing and scheduling
-cron = "0.12.0"
+croner = "2"
 chrono = { version = "0.4.31", features = ["serde"] }
+chrono-tz = "0.8"
 tokio = { version = "1.35.1", features = ["full"] }
 
 # HTTP requests

@@ -36,9 +36,16 @@ impl Scheduler {
 		// hydrate status history
 		let mut histories = self.job_statuses.lock().unwrap();
 		histories.clear();
-		for job in jobs.iter() {
+		for job in jobs.iter_mut() {
 			if let Some(history) = Self::load_history(&self.jobs_dir, &job.id)? {
-				histories.insert(job.id.clone(), history);
+				// Keep the whole vector in the map
+				histories.insert(job.id.clone(), history.clone());
+
+				// attach the most recent entry to the job so the TUI can show it
+				if let Some(last) = history.last() {
+					job.last_status = Some(last.clone());
+					job.last_run = Some(last.timestamp);
+				}
 			}
 		}
 

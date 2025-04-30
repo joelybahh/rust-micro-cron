@@ -1,5 +1,6 @@
 use anyhow::Result;
 use chrono::{Utc};
+use chrono_tz::Australia::Sydney;
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
     execute,
@@ -19,6 +20,7 @@ use tui::{
 
 use crate::logger::LogEntry;
 use crate::scheduler::Scheduler;
+use crate::time::now_sydney;
 
 enum MonitorTab {
     Jobs,
@@ -189,7 +191,7 @@ impl Monitor {
 
                 let next_run = job.next_run.map_or_else(
                     || "Not scheduled".to_string(),
-                    |dt| dt.format("%Y-%m-%d %H:%M:%S").to_string(),
+                    |dt| dt.with_timezone(&Sydney).format("%Y-%m-%d %H:%M:%S").to_string(),
                 );
 
                 let status_text = if let Some(status) = &job.last_status {
@@ -261,18 +263,18 @@ impl Monitor {
         // Job basic info
         let last_run = job.last_run.map_or_else(
             || "Never".to_string(),
-            |dt| dt.format("%Y-%m-%d %H:%M:%S").to_string(),
+            |dt| dt.with_timezone(&Sydney).format("%Y-%m-%d %H:%M:%S").to_string(),
         );
 
         let next_run = job.next_run.map_or_else(
             || "Not scheduled".to_string(),
-            |dt| dt.format("%Y-%m-%d %H:%M:%S").to_string(),
+            |dt| dt.with_timezone(&Sydney).format("%Y-%m-%d %H:%M:%S").to_string(),
         );
 
 		let time_until_next_run = job.next_run.map_or_else(
 			|| "N/A".to_string(),
 			|dt| {
-				let duration = dt.signed_duration_since(Utc::now());
+				let duration = dt.signed_duration_since(now_sydney());
 				format!("{} seconds", duration.num_seconds())
 			},
 		);

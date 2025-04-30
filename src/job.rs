@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
-use cron::Schedule;
+use croner::Cron;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
@@ -8,6 +8,7 @@ use std::str::FromStr;
 use std::time::Duration;
 use std::{fs};
 use thiserror::Error;
+use crate::time::now_sydney;
 
 #[derive(Debug, Error)]
 pub enum JobError {
@@ -45,7 +46,7 @@ pub struct Job {
     pub enabled: bool,
     
     #[serde(skip)]
-    pub schedule: Option<Schedule>,
+    pub schedule: Option<Cron>,
     #[serde(skip)]
     pub last_run: Option<DateTime<Utc>>,
     #[serde(skip)]
@@ -71,10 +72,15 @@ impl Job {
         endpoint: &str,
         method: &str,
     ) -> Result<Self, JobError> {
-        let schedule = Schedule::from_str(cron_expression)
-            .map_err(|e| JobError::CronParseError(e.to_string()))?;
-        
-        let next_run = schedule.upcoming(Utc).next();
+        let schedule = Cron::new(cron_expression)
+			.with_seconds_required()
+			.parse()
+			.map_err(|e| JobError::CronParseError(e.to_string()))?;
+
+		let next_run = schedule
+			.iter_from(now_sydney())
+			.next()
+			.map(|dt| dt.with_timezone(&Utc));
         
         Ok(Job {
             id: id.to_string(),
@@ -105,14 +111,19 @@ impl Job {
         
         // Initialize the schedule
         job.schedule = Some(
-            Schedule::from_str(&job.cron_expression)
-                .map_err(|e| JobError::CronParseError(e.to_string()))?
+            Cron::new(&job.cron_expression)
+				.with_seconds_required()
+				.parse()
+				.map_err(|e| JobError::CronParseError(e.to_string()))?
         );
         
         // Calculate next run time
         if let Some(schedule) = &job.schedule {
-            job.next_run = schedule.upcoming(Utc).next();
-        }
+            job.next_run = schedule
+			.iter_from(now_sydney())
+			.next()
+			.map(|dt| dt.with_timezone(&Utc));
+		}
         
         Ok(job)
     }
@@ -131,8 +142,11 @@ impl Job {
     
     pub fn update_schedule(&mut self) {
         if let Some(schedule) = &self.schedule {
-            self.next_run = schedule.upcoming(Utc).next();
-        }
+            self.next_run = schedule
+				.iter_from(now_sydney())
+				.next()
+				.map(|dt| dt.with_timezone(&Utc));
+		}
     }
     
     pub async fn execute(&mut self, client: &Client) -> Result<JobStatus, JobError> {
