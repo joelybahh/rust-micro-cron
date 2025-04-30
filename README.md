@@ -88,7 +88,7 @@ The application supports **six-field** CRON expressions (seconds first):
 ┌───────────── second (0 - 59)
 │ ┌───────────── minute (0 - 59)
 │ │ ┌───────────── hour (0 - 23)
-│ │ │ ┌───────────── day of month (1 - 31)
+│ │ │ ┌───────────── day of month (1 - 31) || (L) (L = Last day of the month)
 │ │ │ │ ┌───────────── month (1 - 12)
 │ │ │ │ │ ┌───────────── day of week (0 - 6) (Sunday to Saturday)
 │ │ │ │ │ │
@@ -102,6 +102,7 @@ Examples:
 - `0 0 0 * * *` - Every day at midnight
 - `0 0 0 * * 0` - Every Sunday at midnight
 - `0 0 0 1 * *` - First day of each month at midnight
+- `0 0 0 L * *` - Last day of each month at midnight
 
 ## Monitor UI
 
