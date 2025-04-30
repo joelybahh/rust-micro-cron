@@ -4,7 +4,7 @@ A lightweight personal CRON job manager written in Rust. This application allows
 
 ## Features
 
-- CRON job scheduling with standard syntax
+- CRON job scheduling with standard **six-field** syntax (seconds required)
 - HTTP endpoint execution (GET, POST, PUT, DELETE)
 - Configurable payloads and headers
 - Job execution logging
@@ -47,7 +47,7 @@ A lightweight personal CRON job manager written in Rust. This application allows
 ./target/release/personal-cron list
 
 # Create a new job template
-./target/release/personal-cron create --id daily_backup --name "Daily Backup" --cron "0 0 * * *" --endpoint "https://api.example.com/backup" --method POST
+./target/release/personal-cron create --id daily_backup --name "Daily Backup" --cron "0 0 0 * * *" --endpoint "https://api.example.com/backup" --method POST
 ```
 
 ### Configuration
@@ -71,7 +71,7 @@ Jobs are defined as TOML files in the `cron_jobs` directory. Here's an example:
 id = "weather_check"
 name = "Weather API Check"
 description = "Checks the weather API every hour"
-cron_expression = "0 * * * *"
+cron_expression = "0 0 * * * *"
 endpoint = "https://api.example.com/weather"
 method = "GET"
 enabled = true
@@ -82,25 +82,26 @@ headers = { "Content-Type" = "application/json", "Authorization" = "Bearer YOUR_
 
 ## CRON Expression Format
 
-The application supports standard CRON expressions:
+The application supports **six-field** CRON expressions (seconds first):
 
 ```
-┌───────────── minute (0 - 59)
-│ ┌───────────── hour (0 - 23)
-│ │ ┌───────────── day of month (1 - 31)
-│ │ │ ┌───────────── month (1 - 12)
-│ │ │ │ ┌───────────── day of week (0 - 6) (Sunday to Saturday)
-│ │ │ │ │
-│ │ │ │ │
-* * * * *
+┌───────────── second (0 - 59)
+│ ┌───────────── minute (0 - 59)
+│ │ ┌───────────── hour (0 - 23)
+│ │ │ ┌───────────── day of month (1 - 31)
+│ │ │ │ ┌───────────── month (1 - 12)
+│ │ │ │ │ ┌───────────── day of week (0 - 6) (Sunday to Saturday)
+│ │ │ │ │ │
+* * * * * *
 ```
 
 Examples:
-- `* * * * *` - Every minute
-- `0 * * * *` - Every hour at minute 0
-- `0 0 * * *` - Every day at midnight
-- `0 0 * * 0` - Every Sunday at midnight
-- `0 0 1 * *` - First day of each month at midnight
+- `* * * * * *` - Every second
+- `0 * * * * *` - Every minute at second 0
+- `0 0 * * * *` - Every hour at minute 0
+- `0 0 0 * * *` - Every day at midnight
+- `0 0 0 * * 0` - Every Sunday at midnight
+- `0 0 0 1 * *` - First day of each month at midnight
 
 ## Monitor UI
 
