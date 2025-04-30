@@ -1,11 +1,13 @@
 use crate::job::{Job, JobStatus};
 use anyhow::Result;
+use chrono::{NaiveDateTime, TimeZone, Utc};
 use reqwest::Client;
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio::time;
+use std::io::{BufRead, BufReader};
 
 pub struct Scheduler {
     jobs: Arc<Mutex<Vec<Job>>>,
@@ -30,8 +32,78 @@ impl Scheduler {
         let mut jobs = self.jobs.lock().unwrap();
         *jobs = crate::job::load_jobs_from_directory(&self.jobs_dir)?;
         log::info!("Loaded {} jobs from {}", jobs.len(), self.jobs_dir);
+
+		// hydrate status history
+		let mut histories = self.job_statuses.lock().unwrap();
+		histories.clear();
+		for job in jobs.iter() {
+			if let Some(history) = Self::load_history(&self.jobs_dir, &job.id)? {
+				histories.insert(job.id.clone(), history);
+			}
+		}
+
+		log::info!(
+			"Loaded {} jobs ({} with history) from {}",
+			jobs.len(),
+			histories.len(),
+			self.jobs_dir
+		);
+
         Ok(())
     }
+
+	fn load_history(jobs_dir: &str, job_id: &str) -> Result<Option<Vec<JobStatus>>> {
+		use std::fs;
+
+		let path = Path::new(jobs_dir)
+			.join("history")
+			.join(job_id)
+			.join("history.log");
+
+		if !path.exists() {
+			return Ok(None);
+		}
+
+		let file = fs::File::open(&path)?;
+		let reader = BufReader::new(file);
+		let mut out = Vec::new();
+
+		for line in reader.lines() {
+			let line = line?;
+			// Simple pattern: [2025-01-01 12:00:00 Success] Success (14853 ms)
+			if let Some((ts_part, rest)) = line.split_once(']') {
+				// remove leading '['
+				let ts_part = &ts_part[1..];
+				// split timestamp and word
+				if let Some((ts_str, status_word)) = ts_part.rsplit_once(' ') {
+					let dt = NaiveDateTime::parse_from_str(ts_str, "%Y-%m-%d %H:%M:%S")?;
+					let success = matches!(status_word, "Success" | "OK");
+
+					// grab duration inside parentheses
+					let duration = rest
+						.split('(')
+						.nth(1)
+						.and_then(|s| s.split_whitespace().next())
+						.and_then(|num| num.parse::<u64>().ok())
+						.unwrap_or(0);
+
+					out.push(JobStatus {
+						success,
+						timestamp: Utc.from_utc_datetime(&dt),
+						duration_ms: duration,
+						response_code: None,
+						error_message: if success {
+							None
+						} else {
+							Some(rest.trim().to_string())
+						},
+					});
+				}
+			}
+		}
+		Ok(Some(out))
+	}
+
 
     pub async fn start(&self) -> Result<()> {
         log::info!("Starting scheduler with check interval of {}ms", self.check_interval_ms);
